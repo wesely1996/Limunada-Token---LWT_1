@@ -11,6 +11,8 @@
     .next/ # For Next.js projects
     dist/ # Common build output directory
     build/ # Another common build output directory
+    cache/ # solidity cache files
+    artifacts/ # build files
 
     # IDE-specific files (examples)
     .vscode/
