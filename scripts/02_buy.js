@@ -3,42 +3,50 @@ require("dotenv").config();
 
 const LWT = process.env.LWT || "";
 const CURRENCY = process.env.CURRENCY || "";
-const SUBSCRIBER_PK = process.env.PRIVATE_KEY || "";
+const SUBSCRIBER = process.env.SUBSCRIBER || "";
 
 async function main() {
   if (!LWT) throw new Error("Set LWT address");
+  if (!SUBSCRIBER) throw new Error("Set SUBSCRIBER address in .env");
   const amount = BigInt(process.env.BUY_AMOUNT || 1000);
 
-  const [deployer, ...rest] = await ethers.getSigners();
-  const signer = deployer;
-
-  const lwt = await ethers.getContractAt("LWT1", LWT, signer);
-  const currencyAddr = CURRENCY || (await (await lwt.currency()).toString());
-  const currency = await ethers.getContractAt("IERC20", currencyAddr, signer);
+  const lwt = await ethers.getContractAt("LWT1", LWT);
+  const currencyAddr = CURRENCY || (await lwt.currency());
+  const currency = await ethers.getContractAt("IERC20", currencyAddr);
 
   const costPerToken = await lwt.costPerToken();
   const total = costPerToken * amount;
 
+  // Use SUBSCRIBER as signer
+  const subSigner = await ethers.getSigner(SUBSCRIBER);
+
   // Give subscriber lots of USDC on local:
   if (hre.network.name.startsWith("local")) {
-    // mint from deployer only if MockUSDC
+    const [deployer] = await ethers.getSigners();
     try {
-      const mock = await ethers.getContractAt("MockUSDC", currencyAddr, signer);
-      await (await mock.transfer(signer.address, total * 10n)).wait();
+      const mock = await ethers.getContractAt(
+        "MockUSDC",
+        currencyAddr,
+        deployer
+      );
+      await (await mock.transfer(SUBSCRIBER, total * 10n)).wait();
     } catch {}
   }
 
-  await (await currency.approve(LWT, total)).wait();
-  await (await lwt.buy(amount)).wait();
+  await (await currency.connect(subSigner).approve(LWT, total)).wait();
+  await (await lwt.connect(subSigner).buy(amount)).wait();
 
   console.log(
-    "Bought",
+    "Subscriber",
+    SUBSCRIBER,
+    "bought",
     amount.toString(),
     "LWT1 for",
     total.toString(),
     "currency units."
   );
 }
+
 main().catch((e) => {
   console.error(e);
   process.exit(1);
