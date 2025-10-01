@@ -1,0 +1,20 @@
+    # Dependency directories
+    node_modules/
+    jspm_packages/
+
+    # Logs
+    *.log
+    npm-debug.log*
+
+    # Temporary files
+    .DS_Store
+    .next/ # For Next.js projects
+    dist/ # Common build output directory
+    build/ # Another common build output directory
+
+    # IDE-specific files (examples)
+    .vscode/
+    .idea/
+
+    # Operating System files
+    Thumbs.db

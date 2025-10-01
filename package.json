@@ -1,0 +1,28 @@
+{
+  "name": "lwt1-demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/00_deploy_all.js --network localhost",
+    "whitelist:local": "hardhat run scripts/01_whitelist.js --network localhost",
+    "buy:local": "hardhat run scripts/02_buy.js --network localhost",
+    "fund:local": "hardhat run scripts/03_fundRevenue.js --network localhost",
+    "withdrawCost:local": "hardhat run scripts/04_withdrawCost.js --network localhost",
+    "ff:local": "hardhat run scripts/05_fastForward.js --network localhost",
+    "redeem:local": "hardhat run scripts/06_redeem.js --network localhost",
+    "pause:local": "hardhat run scripts/07_pause.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/00_deploy_all.js --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.10"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
+  }
+}

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LWT1 Demo</title>
+  </head>
+  <body>
+    <h1>LWT1 Demo</h1>
+    <div>Contract: <span id="lwt"></span></div>
+    <div>Currency: <span id="cur"></span></div>
+    <div>Cost/Token: <span id="cost"></span></div>
+    <div>Sale/Unit: <span id="sale"></span></div>
+    <div>Payout/Token: <span id="payout"></span></div>
+    <div>UnlockTime: <span id="unlock"></span></div>
+    <hr />
+    <input id="amount" type="number" value="1000" />
+    <span> LWT1 (token units)</span>
+    <button id="approve">Approve</button>
+    <button id="buy">Buy</button>
+    <button id="redeem">Redeem</button>
+    <p id="status"></p>
+
+    <script type="module">
+      import {
+        BrowserProvider,
+        Contract,
+        formatUnits,
+        parseUnits,
+      } from "https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.min.js";
+
+      // Paste values printed by deploy script:
+      const LWT_ADDR = localStorage.getItem("LWT_ADDR") || "PASTE_LWT1_ADDRESS";
+      const CUR_ADDR =
+        localStorage.getItem("CUR_ADDR") || "PASTE_CURRENCY_ADDRESS";
+
+      const LWT_ABI = [
+        "function currency() view returns (address)",
+        "function costPerToken() view returns (uint256)",
+        "function salePricePerUnit() view returns (uint256)",
+        "function payoutPerToken() view returns (uint256)",
+        "function unlockTime() view returns (uint256)",
+        "function buy(uint256 amount)",
+        "function redeem(uint256 amount)",
+      ];
+      const ERC20_ABI = [
+        "function decimals() view returns (uint8)",
+        "function approve(address spender, uint256 value) returns (bool)",
+      ];
+
+      const lwtEl = document.getElementById("lwt");
+      const curEl = document.getElementById("cur");
+      const costEl = document.getElementById("cost");
+      const saleEl = document.getElementById("sale");
+      const payoutEl = document.getElementById("payout");
+      const unlockEl = document.getElementById("unlock");
+      const statusEl = document.getElementById("status");
+      const amountEl = document.getElementById("amount");
+
+      lwtEl.textContent = LWT_ADDR;
+      curEl.textContent = CUR_ADDR;
+
+      async function signerAndContracts() {
+        if (!window.ethereum) {
+          alert("Install MetaMask");
+          throw new Error("no wallet");
+        }
+        const provider = new BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        const lwt = new Contract(LWT_ADDR, LWT_ABI, signer);
+        const currency = new Contract(CUR_ADDR, ERC20_ABI, signer);
+        return { signer, lwt, currency };
+      }
+
+      async function refresh() {
+        const { lwt } = await signerAndContracts();
+        const [cost, sale, payout, unlock] = await Promise.all([
+          lwt.costPerToken(),
+          lwt.salePricePerUnit(),
+          lwt.payoutPerToken(),
+          lwt.unlockTime(),
+        ]);
+        costEl.textContent = String(cost);
+        saleEl.textContent = String(sale);
+        payoutEl.textContent = String(payout);
+        unlockEl.textContent = new Date(Number(unlock) * 1000).toISOString();
+      }
+
+      document.getElementById("approve").onclick = async () => {
+        const { lwt, currency } = await signerAndContracts();
+        const amount = BigInt(amountEl.value || "1000");
+        const cost = await lwt.costPerToken();
+        const total = cost * amount;
+        await (await currency.approve(LWT_ADDR, total)).wait();
+        statusEl.textContent = "Approved " + total + " currency units";
+      };
+
+      document.getElementById("buy").onclick = async () => {
+        const { lwt } = await signerAndContracts();
+        const amount = BigInt(amountEl.value || "1000");
+        const tx = await lwt.buy(amount);
+        await tx.wait();
+        statusEl.textContent = "Bought " + amount + " LWT1";
+      };
+
+      document.getElementById("redeem").onclick = async () => {
+        const { lwt } = await signerAndContracts();
+        const amount = BigInt(amountEl.value || "1000");
+        const tx = await lwt.redeem(amount);
+        await tx.wait();
+        statusEl.textContent = "Redeemed " + amount + " LWT1";
+      };
+
+      refresh();
+    </script>
+  </body>
+</html>
